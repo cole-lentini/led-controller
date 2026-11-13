@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import "./App.css";
+import "./styles/App.css";
 
 const SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
 const CHARACTERISTIC_UUID = "0000fff3-0000-1000-8000-00805f9b34fb";
@@ -49,6 +49,75 @@ const POWER_OFF_COMMAND = new Uint8Array([
   0x7e, 0x00, 0x04, 0x00, 0x00, 0x00, 0xff, 0x00, 0xef
 ]);
 
+const PRESET_COLORS = [
+  "#FF0000", // Red
+  "#FF3300", // Orange
+  "#FFFF00", // Yellow
+  "#00FF00", // Green
+  "#00FFFF", // Cyan
+  "#0000FF", // Blue
+  "#8000FF", // Purple
+  "#FF13F0", // Pink
+  "#FFFFFF", // White
+];
+
+// Settings saving
+interface AppSettings {
+  mode: string;
+  staticColor: string;
+  brightness: number;
+  speed: number;
+}
+
+const STORAGE_KEY = "led-controller-settings";
+
+const DEFAULT_SETTINGS: AppSettings = {
+  mode: "static",
+  staticColor: "#FFFFFF",
+  brightness: 100,
+  speed: 100
+};
+
+function loadSettings(): AppSettings {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (!saved) return DEFAULT_SETTINGS;
+
+    const parsed = JSON.parse(saved);
+
+    return {
+      mode: ["static", "shift", "audio"].includes(parsed.mode)
+        ? parsed.mode
+        : DEFAULT_SETTINGS.mode,
+
+      staticColor:
+        typeof parsed.staticColor === "string" &&
+        /^#[0-9A-Fa-f]{6}$/.test(parsed.staticColor)
+          ? parsed.staticColor
+          : DEFAULT_SETTINGS.staticColor,
+
+      brightness:
+        typeof parsed.brightness === "number" &&
+        Number.isFinite(parsed.brightness) &&
+        parsed.brightness >= 0 &&
+        parsed.brightness <= 100
+          ? parsed.brightness
+          : DEFAULT_SETTINGS.brightness,
+
+      speed:
+        typeof parsed.speed === "number" &&
+        Number.isFinite(parsed.speed) &&
+        parsed.speed >= 0 &&
+        parsed.speed <= 100
+          ? parsed.speed
+          : DEFAULT_SETTINGS.speed,
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
 function makeColorCommand(r: number, g: number, b: number) {
   return new Uint8Array([
     0x7e, 0x00, 0x05, 0x03,
@@ -80,10 +149,21 @@ function App() {
   const [deviceName, setDeviceName] = useState("");
   const [connecting, setConnecting] = useState(false);
 
+  // Get settings from cache
+  const [initialSettings] = useState<AppSettings>(loadSettings);
+
+  // Don't use on/off with cache
   const [isLedOn, setIsLedOn] = useState(true);
 
-  const [staticColor, setStaticColor] = useState("#0096ff");
-  const [brightness, setBrightness] = useState(100);
+  const [mode, setMode] = useState(initialSettings.mode);
+
+  // Initialize with initialSettings.shiftMode
+  const [shiftMode, setShiftMode] = useState();
+
+  const [speed, setSpeed] = useState(initialSettings.speed);
+
+  const [staticColor, setStaticColor] = useState(initialSettings.staticColor);
+  const [brightness, setBrightness] = useState(initialSettings.brightness);
 
   const characteristicRef = useRef<GattCharacteristic | null>(null);
   const deviceRef = useRef<BluetoothDevice | null>(null);
@@ -230,8 +310,17 @@ function App() {
 
     const updateLighting = async () => {
       try {
-        await sendColor(staticColor);
-        await sendBrightness(brightness);
+        if (mode === "static") {
+          console.log("static");
+          await sendColor(staticColor);
+          await sendBrightness(brightness);
+        }
+        else if (mode === "shift") {
+          console.log("shift");
+        }
+        else if (mode === "audio") {
+          console.log("audio");
+        }
       } catch (error) {
         console.error("LED update failed:", error);
       } finally {
@@ -240,7 +329,23 @@ function App() {
     };
 
     void updateLighting();
-  }, [connected, staticColor, brightness, sendColor, sendBrightness]);
+  }, [connected, mode, staticColor, brightness, sendColor, sendBrightness]);
+
+  // Save settings whenever they change.
+  useEffect(() => {
+    try {
+      const settings: AppSettings = {
+        mode,
+        staticColor,
+        brightness,
+        speed,
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.error("Unable to save settings:", error);
+    }
+  }, [mode, staticColor, brightness, speed]);
 
   // Clean up the Bluetooth connection when the component unmounts.
   useEffect(() => {
@@ -312,51 +417,153 @@ function App() {
         )}
       </section>
 
-      {/* Color selection panel */}
+      {/* Mode panel */}
       <section className="panel">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">COLOR</div>
-            <h2>Choose Your Color</h2>
+            <div className="eyebrow">LIGHTING</div>
+            <h2>Select Mode</h2>
           </div>
         </div>
 
-        <div className="color-picker">
-          <input
-            type="color"
-            value={staticColor}
-            onChange={(e) => setStaticColor(e.target.value)}
-            disabled={!connected}
-          />
-          <strong>{staticColor.toUpperCase()}</strong>
+        <div className="mode-grid">
+          <button
+            className={`mode-card ${mode === "static" ? "selected" : ""}`}
+            onClick={() => setMode("static")}
+          >
+            <span className="mode-icon">◉</span>
+            <strong>Static Color</strong>
+            <span>Choose your own color</span>
+          </button>
+
+          <button
+            className={`mode-card ${mode === "shift" ? "selected" : ""}`}
+            onClick={() => setMode("shift")}
+          >
+            <span className="mode-icon">☼</span>
+            <strong>Shifting</strong>
+            <span>Constantly changing color</span>
+          </button>
+
+          <button
+            className={`mode-card ${mode === "audio" ? "selected" : ""}`}
+            onClick={() => setMode("audio")}
+          >
+            <span className="mode-icon">♫</span>
+            <strong>Audio Reactive</strong>
+            <span>Colors respond to sound</span>
+          </button>
         </div>
       </section>
 
-      {/* Brightness slider panel */}
-      <section className="panel">
-        <div className="section-heading">
-          <div>
-            <div className="eyebrow">OUTPUT</div>
-            <h2>Brightness</h2>
-          </div>
+      {/* Only show when mode is static */}
+      {mode === "static" && (
+        <>
+          {/* Color selection panel */}
+          <section className="panel">
+            <div className="section-heading">
+              <div>
+                <div className="eyebrow">COLOR</div>
+                <h2>Choose Your Color</h2>
+              </div>
+            </div>
 
-          <strong className="brightness-value">{brightness}%</strong>
-        </div>
+            {/* Preset color selection */}
+            <div className="color-grid">
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`color-button ${staticColor === color ? "selected" : ""}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setStaticColor(color)}
+                  disabled={!connected}
+                  aria-label={`Select color ${color}`}
+                  title={color}
+                />
+              ))}
+            </div>
 
-        {/* Brightness slider */}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={brightness}
-          onChange={(e) => setBrightness(Number(e.target.value))}
-          disabled={!connected}
-        />
+            {/* Preset color selection */}
+            <h3>Custom:</h3>
 
-        <p className="setting-description">
-          Adjust the brightness of your LED strip.
-        </p>
-      </section>
+            <div className="color-picker">
+              <input
+                className={`custom-color-input ${
+                  PRESET_COLORS.includes(staticColor.toUpperCase()) ? "" : "selected"
+                }`}
+                type="color"
+                value={staticColor}
+                onChange={(e) => setStaticColor(e.target.value)}
+                disabled={!connected}
+              />
+
+              <strong>{staticColor.toUpperCase()}</strong>
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* Only show when mode is shift */}
+      {mode === "shift" && (
+        <>
+          {/* Speed slider panel */}
+          <section className="panel">
+            <div className="section-heading">
+              <div>
+                <div className="eyebrow">OUTPUT</div>
+                <h2>Speed</h2>
+              </div>
+
+              <strong className="percent-value">{speed}%</strong>
+            </div>
+
+            {/* Speed slider */}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              disabled={!connected}
+            />
+
+            <p className="setting-description">
+              Adjust the speed of your LED strip.
+            </p>
+          </section>
+        </>
+      )}
+
+      {/* Only show when mode is static or shift */}
+      {(mode === "static" || mode === "shift") && (
+        <>
+          {/* Brightness slider panel */}
+          <section className="panel">
+            <div className="section-heading">
+              <div>
+                <div className="eyebrow">OUTPUT</div>
+                <h2>Brightness</h2>
+              </div>
+
+              <strong className="percent-value">{brightness}%</strong>
+            </div>
+
+            {/* Brightness slider */}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={brightness}
+              onChange={(e) => setBrightness(Number(e.target.value))}
+              disabled={!connected}
+            />
+
+            <p className="setting-description">
+              Adjust the brightness of your LED strip.
+            </p>
+          </section>
+        </>
+      )}
 
       <footer>
         <p>&copy; {new Date().getFullYear()} Cole Lentini. All rights reserved.</p>

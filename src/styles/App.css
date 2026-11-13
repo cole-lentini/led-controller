@@ -147,6 +147,46 @@ h2 {
   background: #38384a;
 }
 
+/* Grid of color buttons */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 38px);
+  gap: 10px;
+  width: 100%;
+}
+
+/* Color button styling */
+.color-button {
+  width: 38px;
+  height: 30px;
+  border: 2px solid #38384a;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.color-button:hover:not(:disabled) {
+  transform: scale(1.1);
+  border-color: #ffffff80;
+}
+
+.color-button.selected {
+  border: 3px solid #a99bff;
+  box-shadow: 0 0 0 2px #8978ff50;
+}
+
+.color-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .color-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+}
+
 .section-heading {
   display: flex;
   justify-content: space-between;
@@ -154,7 +194,52 @@ h2 {
   margin-bottom: 22px;
 }
 
-.brightness-value {
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.mode-card {
+  background: #20202e;
+  border: 1px solid #303041;
+  border-radius: 12px;
+  padding: 20px 12px;
+  text-align: left;
+  color: #eeeeF5;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: 0.2s;
+}
+
+.mode-card:hover {
+  border-color: #7770bb;
+}
+
+.mode-card.selected {
+  border-color: #8978ff;
+  background: #29243f;
+  box-shadow: 0 0 0 1px #8978ff30;
+}
+
+.mode-icon {
+  font-size: 27px;
+  color: #a99bff;
+  margin-bottom: 5px;
+}
+
+.mode-card strong {
+  font-size: 13px;
+}
+
+.mode-card > span:last-child {
+  color: #9292a8;
+  font-size: 11px;
+}
+
+.percent-value {
   font-size: 13px;
   color: #a99bff;
 }
@@ -183,15 +268,44 @@ input[type="range"]:disabled {
   margin-top: 22px;
 }
 
-.color-picker input {
-  width: 65px;
-  height: 45px;
-  border: none;
+.custom-color-input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 55px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  border: 2px solid #38384a;
+  border-radius: 9px;
+  box-sizing: border-box;
   background: transparent;
+  overflow: hidden;
   cursor: pointer;
+  transition: 0.2s;
+  flex-shrink: 0;
 }
 
-.color-picker input:disabled {
+.custom-color-input.selected {
+  border: 3px solid #a99bff;
+  box-shadow: 0 0 0 2px #8978ff50;
+}
+
+.custom-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.custom-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.custom-color-input::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.custom-color-input:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
