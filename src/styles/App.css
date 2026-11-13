@@ -1,4 +1,3 @@
-
 .app {
   width: min(900px, calc(100% - 40px));
   margin: 0 auto;
@@ -315,6 +314,123 @@ input[type="range"]:disabled {
   letter-spacing: 1px;
 }
 
+.shift-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.shift-setting label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d5d5e4;
+}
+
+/* Shift mode dropdown */
+.shift-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+}
+
+/* Dropdown button */
+.dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: 12px 15px;
+  background: #20202e;
+  border: 1px solid #38384a;
+  border-radius: 9px;
+  color: #eeeeF5;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: 0.2s;
+}
+
+.dropdown:hover:not(:disabled) {
+  border-color: #7770bb;
+  background: #252536;
+}
+
+.dropdown:focus-visible {
+  border-color: #8978ff;
+  box-shadow: 0 0 0 2px #8978ff30;
+}
+
+.dropdown:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Dropdown arrow */
+.dropdown-arrow {
+  color: #a99bff;
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown options */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  padding: 5px;
+  background: #20202e;
+  border: 1px solid #38384a;
+  border-radius: 11px;
+  box-shadow: 0 10px 25px #00000050;
+  overflow: hidden;
+  animation: dropdown-open 0.15s ease-out;
+}
+
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #d5d5e4;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.dropdown-menu button:hover {
+  background: #303047;
+  color: white;
+}
+
+.dropdown-menu button.selected {
+  background: #29243f;
+  color: #a99bff;
+}
+
+@keyframes dropdown-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 footer {
   display: flex;
   justify-content: space-between;
@@ -352,5 +468,9 @@ footer p {
 
   .device-info {
     min-width: 120px;
+  }
+
+  .shift-dropdown {
+    max-width: 100%;
   }
 }
